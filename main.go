@@ -1,6 +1,10 @@
 package main
 
-import "sync"
+import (
+	"bytes"
+	"html/template"
+	"sync"
+)
 
 type Recepient struct {
 	Name  string
@@ -22,4 +26,20 @@ func main() {
 	}
 
 	wg.Wait()
+}
+
+func executeTemplate(r Recepient) (string, error) {
+	t, err := template.ParseFiles("email.tmpl")
+	if err != nil {
+		return "", err
+	}
+
+	var tpl bytes.Buffer
+
+	err1 := t.Execute(&tpl, r)
+	if err1 != nil {
+		return "", err1
+	}
+
+	return tpl.String(), nil
 }
