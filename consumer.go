@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func emailWorker(id int, ch chan Recepient, wg *sync.WaitGroup) {
+func emailWorker(id int, ch <-chan Recepient, deadLetterQueue chan<- DeadLetter, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for recipient := range ch {
 		smtpHost := "localhost"
@@ -19,8 +19,12 @@ func emailWorker(id int, ch chan Recepient, wg *sync.WaitGroup) {
 
 		msg, err := executeTemplate(recipient)
 		if err != nil {
-			fmt.Printf("Worker :%d Error parsing template for %s", id, recipient.Email)
-			// Todo: add to dead letter queue
+			log.Printf("Worker %d: error parsing template for %s: %v", id, recipient.Email, err)
+			deadLetterQueue <- DeadLetter{
+				Recipient: recipient,
+				Reason:    "template",
+				Error:     err.Error(),
+			}
 			continue
 		}
 
@@ -28,7 +32,13 @@ func emailWorker(id int, ch chan Recepient, wg *sync.WaitGroup) {
 
 		err2 := smtp.SendMail(smtpHost+":"+smtpPort, nil, "rakesh@codersgyan.com", []string{recipient.Email}, []byte(msg))
 		if err2 != nil {
-			log.Fatal(err2)
+			log.Printf("Worker %d: failed to send email to %s: %v", id, recipient.Email, err2)
+			deadLetterQueue <- DeadLetter{
+				Recipient: recipient,
+				Reason:    "smtp",
+				Error:     err2.Error(),
+			}
+			continue
 		}
 
 		time.Sleep(50 * time.Millisecond)

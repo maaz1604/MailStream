@@ -13,19 +13,26 @@ type Recepient struct {
 
 func main() {
 	recepientChannel := make(chan Recepient)
+	deadLetterQueue := make(chan DeadLetter)
 	go func() {
 		loadRecepient("./emails.csv", recepientChannel)
 	}()
 
 	var wg sync.WaitGroup
+	var deadLetterWg sync.WaitGroup
 	workerCount := 5
+
+	deadLetterWg.Add(1)
+	go deadLetterWorker(deadLetterQueue, &deadLetterWg)
 
 	for i := 1; i <= workerCount; i++ {
 		wg.Add(1)
-		go emailWorker(i, recepientChannel, &wg)
+		go emailWorker(i, recepientChannel, deadLetterQueue, &wg)
 	}
 
 	wg.Wait()
+	close(deadLetterQueue)
+	deadLetterWg.Wait()
 }
 
 func executeTemplate(r Recepient) (string, error) {
