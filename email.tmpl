@@ -1,8 +1,24 @@
 To: {{.Email}}
-Subject: Hello, {{.Name}}
+Subject: Welcome, {{.Name}}!
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
 
-Hi {{.Name}}
+Hello {{.Name}},
 
+Welcome to MailStream!
 
-Thanks,
-From Maaz Amir's team.
+This is a test email sent by the MailStream email delivery service. The
+application reads recipients from a CSV file, renders this message using a Go
+template, and delivers it through the configured SMTP server.
+
+----------------------------------------
+Message details
+----------------------------------------
+Recipient: {{.Name}}
+Email:    {{.Email}}
+
+If you received this message, the email delivery pipeline is working
+successfully for your address.
+
+Thank you,
+The MailStream Team
